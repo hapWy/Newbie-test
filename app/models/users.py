@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import (
+    Table,
     Boolean,
     Column,
     DateTime,
@@ -27,15 +28,15 @@ class User(Base):
     email = Column(EmailType(50), index=True, nullable=False)
     password = Column(PasswordType(schemes=["pbkdf2_sha512"]), nullable=False)
 
-class UserKeys(Base):
-    __tablename__='user_keys'
+# class UserKeys(Base):
+#     __tablename__='user_keys'
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    public_key = Column(String(2000), nullable=False)
-    is_revoked=Column(Boolean, default=False)
+#     id = Column(Integer, primary_key=True, index=True)
+#     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+#     public_key = Column(String(2000), nullable=False)
+#     is_revoked=Column(Boolean, default=False)
 
-    user = relationship('User',back_populates='keys')
+#     user = relationship('User',back_populates='keys')
 
 
 
@@ -50,15 +51,35 @@ class UserToken(Base):
 
     user = relationship('User', back_populates='tokens', lazy='joined')
 
-class UsersTeam(Base):
+class UserTeam(Base):
     __tablename__='user_teams'
 
     id = Column(Integer, primary_key=True, index=True)
     name=Column(String(50), unique=True)
     users = relationship('User', secondary='user_group_association', back_populates='teams')
-    titles = relationship('Product', back_populates='user_team', cascade="all, delete-orphan")
+    titles = relationship('title', back_populates='user_team', cascade="all, delete-orphan")
 
 
+class PermissionOnTeam(Base):
+    __tablename__='user_role'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(20))
+
+
+user_permission_association = Table(
+    'user_permission',
+    Base.metadata,
+
+    Column('user_id', ForeignKey('users.id')),
+    Column('permission', ForeignKey('user_role.id'))
+)
+
+# class UserPermissionAssociation(Base):
+#     __tablename__='user_permission'
+
+#     user_id = ForeignKey('users.id')
+#     permission = ForeignKey('user_role.id')
 
 class UserTeamAssociation(Base):
     __tablename__='user_team_association'
@@ -66,4 +87,6 @@ class UserTeamAssociation(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(ForeignKey('users.id'))
     team_id=Column(ForeignKey('user_teams.id'))
+    role = Column(String(20))
+    permission = relationship('user_role', secondary='user_permission')
 
